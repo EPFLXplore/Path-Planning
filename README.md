@@ -35,7 +35,7 @@ $ rosrun teleop_twist_keyboard teleop_twist_keyboard.py
 ```
 If this command doesn't work, make sure to install the 'teleop_twist_keyboard' package with :
 ```console
-$ sudo apt-get install ros-noetic-teleop-twist-keyboard
+$ sudo apt-get install ros-melodic-teleop-twist-keyboard
 ```
 3) Rviz visualization tool :
 ```console
