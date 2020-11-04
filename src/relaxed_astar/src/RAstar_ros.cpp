@@ -41,6 +41,9 @@
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(RAstar_planner::RAstarPlannerROS, nav_core::BaseGlobalPlanner)
 
+//==========================
+int* OGM_continuous;
+//==========================
 
 int value;
 int mapSize;
@@ -110,13 +113,13 @@ void RAstarPlannerROS::initialize(std::string name, costmap_2d::Costmap2DROS* gl
 
   ofstream myfile;
   myfile.open("my_output_map.pgm"); //outputs to /home/ros-industrial/.ros/my_output_map.txt
-  //myfile << "Writing this to a file.\n";
   myfile << "P2" << endl;
   myfile << costmap_->getSizeInCellsX() << " " << costmap_->getSizeInCellsY() << endl;
   myfile << 255 << endl;
 
 
   for (unsigned int iy = 0; iy < costmap_->getSizeInCellsY(); iy++)
+  //for (unsigned int iy = costmap_->getSizeInCellsY() - 1; iy >= 0; iy--)
   {
     for (unsigned int ix = 0; ix < costmap_->getSizeInCellsX(); ix++)
     {
@@ -127,22 +130,57 @@ void RAstarPlannerROS::initialize(std::string name, costmap_2d::Costmap2DROS* gl
   }
 
 	OGM = new bool [mapSize]; 
-    for (unsigned int iy = 0; iy < costmap_->getSizeInCellsY(); iy++)
+  for (unsigned int iy = 0; iy < costmap_->getSizeInCellsY(); iy++)
+  {
+    for (unsigned int ix = 0; ix < costmap_->getSizeInCellsX(); ix++)
     {
-      for (unsigned int ix = 0; ix < costmap_->getSizeInCellsX(); ix++)
-      {
-        unsigned int cost = static_cast<int>(costmap_->getCost(ix, iy));
-        //cout<<cost;
-        //myfile << cost << " ";
-        if (cost == 0)
-          OGM[iy*width+ix]=true;
-        else
-          OGM[iy*width+ix]=false;
-      }
-      //myfile << endl;
+      unsigned int cost = static_cast<int>(costmap_->getCost(ix, iy));
+      if (cost == 0)
+        OGM[iy*width+ix]=true;
+      else
+        OGM[iy*width+ix]=false;
     }
+  }
 
   myfile.close();
+
+  //===============================
+
+  int rows, cols, size, gray;
+  string format;
+
+  ifstream input;
+  input.open("input_p2.pgm"); //input from /home/ros-industrial/.ros/input_p2.pgm
+  input >> format >> rows >> cols >> gray;
+  size = rows * cols;
+
+  ofstream output_stream;
+  output_stream.open("output_p2.pgm");
+  output_stream << "P2" << endl;
+  output_stream << rows << " " << cols << endl;
+  output_stream << 255 << endl;
+  
+  OGM_continuous = new int[size];
+  for (unsigned int iy = cols-1; iy < cols; iy--) //Tricky condition b/c unsigned int is never negative
+  //for (unsigned int iy = 0; iy < cols; iy++)
+  {
+    for (unsigned int ix = 0; ix < rows; ix++)
+    {
+      input >> OGM_continuous[iy*width+ix];
+    }
+  }
+  for (unsigned int iy = 0; iy < cols; iy++)
+  {
+    for (unsigned int ix = 0; ix < rows; ix++)
+    {
+      output_stream << OGM_continuous[iy*width+ix] << " ";
+    }
+    output_stream << endl;
+  }
+
+  input.close();
+  output_stream.close();
+
 
 	MyExcelFile << "StartID\tStartX\tStartY\tGoalID\tGoalX\tGoalY\tPlannertime(ms)\tpathLength\tnumberOfCells\t" << endl;
 
@@ -406,7 +444,7 @@ vector<int> RAstarPlannerROS::findPath(int startCell, int goalCell, float g_scor
 			if(g_score[neighborCells[i]]==infinity)
 			{
 				g_score[neighborCells[i]]=g_score[currentCell]+getMoveCost(currentCell,neighborCells[i]);
-				addNeighborCellToOpenList(OPL, neighborCells[i], goalCell, g_score); 
+				addNeighborCellToOpenList(OPL, neighborCells[i], goalCell, g_score);
 			}//end if
 		}//end for
 	}//end while
@@ -586,7 +624,7 @@ bool RAstarPlannerROS::isStartAndGoalCellsValid(int startCell,int goalCell)
 }
 
 
- float  RAstarPlannerROS::getMoveCost(int i1, int j1, int i2, int j2){
+  float  RAstarPlannerROS::getMoveCost(int i1, int j1, int i2, int j2){
    float moveCost=INFINIT_COST;//start cost with maximum value. Change it to real cost of cells are connected
    //if cell2(i2,j2) exists in the diagonal of cell1(i1,j1)
    if((j2==j1+1 && i2==i1+1)||(i2==i1-1 && j2==j1+1) ||(i2==i1-1 && j2==j1-1)||(j2==j1-1 && i2==i1+1)){
@@ -600,10 +638,16 @@ bool RAstarPlannerROS::isStartAndGoalCellsValid(int startCell,int goalCell)
        moveCost = 1;
      }
    }
-   return moveCost;
- } 
+    int h1 = OGM_continuous[getCellIndex(i1, j1)];
+    int h2 = OGM_continuous[getCellIndex(i2, j2)];
+    int height_diff = abs(h2 - h1);
+    // TODO Probably modifiy the heuristic constant!!! :)
+    float penalty = 1 + height_diff * 5; // 5 is my heuristic, should be tweaked according to application!!
+   
+    return moveCost * penalty;
+  }
  
-  float  RAstarPlannerROS::getMoveCost(int CellID1, int CellID2){
+   float  RAstarPlannerROS::getMoveCost(int CellID1, int CellID2){
    int i1=0,i2=0,j1=0,j2=0;
     
    i1=getCellRowID(CellID1);
