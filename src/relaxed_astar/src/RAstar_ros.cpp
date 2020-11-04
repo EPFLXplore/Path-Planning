@@ -81,17 +81,17 @@ RAstarPlannerROS::RAstarPlannerROS(ros::NodeHandle &nh)
 
 }
 
-RAstarPlannerROS::RAstarPlannerROS(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
+RAstarPlannerROS::RAstarPlannerROS(std::string name, costmap_2d::Costmap2DROS* global_costmap) //costmap_ros)
 {
-  initialize(name, costmap_ros);
+  initialize(name, global_costmap); //costmap_ros);
 }
 
-void RAstarPlannerROS::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
+void RAstarPlannerROS::initialize(std::string name, costmap_2d::Costmap2DROS* global_costmap) //costmap_ros)
 {
 
   if (!initialized_)
   {
-    costmap_ros_ = costmap_ros;
+    costmap_ros_ = global_costmap; //costmap_ros;
     costmap_ = costmap_ros_->getCostmap();
 
     ros::NodeHandle private_nh("~/" + name);
@@ -108,6 +108,23 @@ void RAstarPlannerROS::initialize(std::string name, costmap_2d::Costmap2DROS* co
 	tBreak = 1+1/(mapSize); 
 	value =0;
 
+  ofstream myfile;
+  myfile.open("my_output_map.pgm"); //outputs to /home/ros-industrial/.ros/my_output_map.txt
+  //myfile << "Writing this to a file.\n";
+  myfile << "P2" << endl;
+  myfile << costmap_->getSizeInCellsX() << " " << costmap_->getSizeInCellsY() << endl;
+  myfile << 255 << endl;
+
+
+  for (unsigned int iy = 0; iy < costmap_->getSizeInCellsY(); iy++)
+  {
+    for (unsigned int ix = 0; ix < costmap_->getSizeInCellsX(); ix++)
+    {
+      unsigned int cost = static_cast<int>(costmap_->getCost(ix, iy));
+      myfile << cost << " ";
+    }
+    myfile << endl;
+  }
 
 	OGM = new bool [mapSize]; 
     for (unsigned int iy = 0; iy < costmap_->getSizeInCellsY(); iy++)
@@ -116,13 +133,16 @@ void RAstarPlannerROS::initialize(std::string name, costmap_2d::Costmap2DROS* co
       {
         unsigned int cost = static_cast<int>(costmap_->getCost(ix, iy));
         //cout<<cost;
+        //myfile << cost << " ";
         if (cost == 0)
           OGM[iy*width+ix]=true;
         else
           OGM[iy*width+ix]=false;
       }
+      //myfile << endl;
     }
 
+  myfile.close();
 
 	MyExcelFile << "StartID\tStartX\tStartY\tGoalID\tGoalX\tGoalY\tPlannertime(ms)\tpathLength\tnumberOfCells\t" << endl;
 
@@ -336,7 +356,7 @@ for (uint i=0; i<mapSize; i++)
    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
 
 
-   cout<<"time to generate best global path by Relaxed A* = " << (diff(time1,time2).tv_sec)*1e3 + (diff(time1,time2).tv_nsec)*1e-6 << " microseconds" << endl;
+   cout<<"Time to generate best global path by Relaxed A* = " << (diff(time1,time2).tv_sec)*1e3 + (diff(time1,time2).tv_nsec)*1e-6 << " microseconds" << endl;
    
    MyExcelFile <<"\t"<< (diff(time1,time2).tv_sec)*1e3 + (diff(time1,time2).tv_nsec)*1e-6 ;
 
