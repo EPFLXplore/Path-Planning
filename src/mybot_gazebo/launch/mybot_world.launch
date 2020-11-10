@@ -10,9 +10,9 @@
   
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <!--arg name="world_name" value="$(find mybot_gazebo)/worlds/mybot.world"/-->
-    <!--<arg name="world_name" value="$(find mybot_gazebo)/worlds/turtlebot_playground.world"/>-->
+    <arg name="world_name" value="$(find mybot_gazebo)/worlds/turtlebot_playground.world"/>
     <!--<arg name="world_name" value="$(find mybot_gazebo)/worlds/volcano/volcano.world"/>-->
-    <arg name="world_name" value="$(find mybot_gazebo)/worlds/heightmap1/terrain.world"/>
+    <!--<arg name="world_name" value="$(find mybot_gazebo)/worlds/heightmap1/terrain.world"/>-->
 
     <arg name="paused" value="$(arg paused)"/>
     <arg name="use_sim_time" value="$(arg use_sim_time)"/>
