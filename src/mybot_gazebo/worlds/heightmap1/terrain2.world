@@ -1,6 +1,11 @@
 <?xml version="1.0" ?>
 <sdf version="1.5">
   <world>
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
     <model name="heightmap">
       <static>true</static>
       <link name="link">

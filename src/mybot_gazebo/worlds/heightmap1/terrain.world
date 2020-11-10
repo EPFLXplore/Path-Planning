@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.5">
-  <world name="my_world">
+  <world name="my_world"> <!-- name="my_world"> putting a name causes a crash for some reason...-->
     
     <include>
       <uri>model://sun</uri>
@@ -46,7 +46,7 @@
                 <fade_dist>5</fade_dist>
               </blend>
               <uri>model://heightmap1/materials/textures/heightmap1_small.png</uri>
-	      <size>40 40 2</size>
+	            <size>40 40 2</size>
               <pos>0 0 0</pos>
             </heightmap>
           </geometry>

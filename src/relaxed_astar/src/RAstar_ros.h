@@ -107,6 +107,7 @@ public:
 		std::vector<geometry_msgs::PoseStamped>& plan
 	       );
  
+  void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path);
 
   void getCorrdinate (float& x, float& y);
   int convertToCellIndex (float x, float y);

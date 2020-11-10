@@ -76,12 +76,12 @@ namespace RAstar_planner
 //Default Constructor
 RAstarPlannerROS::RAstarPlannerROS()
 {
-
+  cout << "========Constructed via default constructor" << endl;
 }
 RAstarPlannerROS::RAstarPlannerROS(ros::NodeHandle &nh)
 {
   ROSNodeHandle = nh;
-
+  cout << "============Constructed via nodeHandle constructor" << endl;
 }
 
 RAstarPlannerROS::RAstarPlannerROS(std::string name, costmap_2d::Costmap2DROS* global_costmap) //costmap_ros)
@@ -89,8 +89,11 @@ RAstarPlannerROS::RAstarPlannerROS(std::string name, costmap_2d::Costmap2DROS* g
   initialize(name, global_costmap); //costmap_ros);
 }
 
+ros::Publisher plan_pub_;
 void RAstarPlannerROS::initialize(std::string name, costmap_2d::Costmap2DROS* global_costmap) //costmap_ros)
 {
+
+  cout << "==============Got asked to initialize the planner with name : " << name << endl;
 
   if (!initialized_)
   {
@@ -98,6 +101,8 @@ void RAstarPlannerROS::initialize(std::string name, costmap_2d::Costmap2DROS* gl
     costmap_ = costmap_ros_->getCostmap();
 
     ros::NodeHandle private_nh("~/" + name);
+    //Maybe this will publish the plan somewhere somehow
+    plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
 
     originX = costmap_->getOriginX();
     originY = costmap_->getOriginY();
@@ -191,9 +196,12 @@ void RAstarPlannerROS::initialize(std::string name, costmap_2d::Costmap2DROS* gl
     ROS_WARN("This planner has already been initialized... doing nothing");
 }
 
+std::string frame_id_;
 bool RAstarPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
                              std::vector<geometry_msgs::PoseStamped>& plan)
 {
+
+  cout << "===============Got asked to makePlane(); " << endl;
 
   if (!initialized_)
   {
@@ -206,6 +214,7 @@ bool RAstarPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, const g
 
   plan.clear();
 
+  frame_id_ = goal.header.frame_id;
   if (goal.header.frame_id != costmap_ros_->getGlobalFrameID())
   {
     ROS_ERROR("This planner as configured will only accept goals in the %s frame, but a goal was sent in the %s frame.",
@@ -264,7 +273,7 @@ MyExcelFile << startCell <<"\t"<< start.pose.position.x <<"\t"<< start.pose.posi
     {
 
 // convert the path
-
+      cout << "=================Converting path of length : " << bestPath.size() << endl;
       for (int i = 0; i < bestPath.size(); i++)
       {
 
@@ -306,6 +315,8 @@ MyExcelFile << startCell <<"\t"<< start.pose.position.x <<"\t"<< start.pose.posi
 	MyExcelFile << "\t" <<path_length <<"\t"<< plan.size() <<endl;
       //publish the plan
 
+      publishPlan(plan);
+
       return true;
 
     }
@@ -325,6 +336,29 @@ MyExcelFile << startCell <<"\t"<< start.pose.position.x <<"\t"<< start.pose.posi
   }
 
 }
+
+void RAstarPlannerROS::publishPlan(const std::vector<geometry_msgs::PoseStamped>& path) {
+    if (!initialized_) {
+        ROS_ERROR(
+                "This planner has not been initialized yet, but it is being used, please call initialize() before use");
+        return;
+    }
+
+    //create a message for the plan
+    nav_msgs::Path gui_path;
+    gui_path.poses.resize(path.size());
+
+    gui_path.header.frame_id = frame_id_;
+    gui_path.header.stamp = ros::Time::now();
+
+    // Extract the plan in world co-ordinates, we assume the path is all in the same frame
+    for (unsigned int i = 0; i < path.size(); i++) {
+        gui_path.poses[i] = path[i];
+    }
+
+    plan_pub_.publish(gui_path);
+}
+
 void RAstarPlannerROS::getCorrdinate(float& x, float& y)
 {
 
