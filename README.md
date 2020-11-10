@@ -41,3 +41,7 @@ $ sudo apt-get install ros-melodic-teleop-twist-keyboard
 ```console
 $ roslaunch mybot_description mybot_rviz_amcl.launch 
 ```
+
+# Warning :
+Make sure to copy input_p2.pgm that you can find at the root of this directory (same place as src, build, devel ...) and put it at /home/{username}/.ros/ <br>
+  Indeed, the current mybot_navigation path planning implementation expects finding this file at the indicated location.
